@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block heading %}Reports{% endblock %}
+{% block content %}
+<div class="panel">
+  <table>
+    <thead><tr><th>Created</th><th>Date Range</th><th>Priority</th><th>Unit</th><th class="num">Rows</th><th>File</th></tr></thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ r['created_at'] }}</td>
+        <td>{{ r['date_from'] }} to {{ r['date_to'] }}</td>
+        <td>{{ r['priority_filter'] }}</td>
+        <td>{{ 'Unit ' + r['unit_filter'] if r['unit_filter'] in ('1', '2', '3') else 'All' }}</td>
+        <td class="num">{{ r['row_count'] }}</td>
+        <td><a href="{{ url_for('reports.download', filename=r['filename']) }}">Download</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No reports generated yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

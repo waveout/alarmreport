@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Generate Report{% endblock %}
+{% block heading %}Generate Report{% endblock %}
+{% block content %}
+<div class="panel">
+  <form method="post" class="form-card">
+    <label>From Date<input type="date" name="date_from" value="{{ today }}" required></label>
+    <label>To Date<input type="date" name="date_to" value="{{ today }}" required></label>
+    <label>Priority
+      <select name="priority">
+        <option value="all">All</option>
+        <option value="1">Priority 1</option>
+        <option value="2">Priority 2</option>
+        <option value="3">Priority 3</option>
+      </select>
+    </label>
+    <label>Unit
+      <select name="unit">
+        <option value="all">All Units</option>
+        <option value="1">Unit 1</option>
+        <option value="2">Unit 2</option>
+        <option value="3">Unit 3</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Generate Report (Excel)</button>
+  </form>
+</div>
+{% endblock %}

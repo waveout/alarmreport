@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Data Load History{% endblock %}
+{% block heading %}Data Load History{% endblock %}
+{% block content %}
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th>Loaded At</th><th>File</th><th>Unit</th><th>Backup File</th><th>Status</th><th class="num">Rows</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+      {% for l in loads %}
+      <tr class="status-{{ l['status'] }}">
+        <td>{{ l['loaded_at'] }}</td>
+        <td>{{ l['filename'] }}</td>
+        <td>{{ 'Unit ' + l['unit']|string if l['unit'] else 'Unknown' }}</td>
+        <td>{{ l['backup_filename'] }}</td>
+        <td>{{ l['status'] }}</td>
+        <td class="num">{{ l['row_count'] }}</td>
+        <td>{{ l['error_message'] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">No data loads yet. Drop a CSV file into the incoming folder.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

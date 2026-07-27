@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Preview Role{% endblock %}
+{% block heading %}Preview Role{% endblock %}
+{% block content %}
+<div class="panel">
+  <p class="muted">
+    Testing-only: temporarily view the app as if you had a different role. This does not
+    change any data and is only available on this account.
+  </p>
+  <form method="post" class="form-card">
+    <label class="full">View app as
+      <select name="role">
+        <option value="off" {{ 'selected' if not current_preview else '' }}>My real role</option>
+        {% for role_key, role_name in roles.items() %}
+        <option value="{{ role_key }}" {{ 'selected' if current_preview == role_key else '' }}>{{ role_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Apply</button>
+  </form>
+  {% if current_preview %}
+  <p class="muted">Currently previewing as: <strong>{{ roles.get(current_preview, current_preview) }}</strong></p>
+  {% endif %}
+</div>
+{% endblock %}

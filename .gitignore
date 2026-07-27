@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/alarms.db
+data/alarms.db-*
+data/incoming/*
+data/backup/*
+data/reports/*
+!data/incoming/.gitkeep
+!data/backup/.gitkeep

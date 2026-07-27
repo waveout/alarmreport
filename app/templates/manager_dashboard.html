@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block heading %}Manager Dashboard{% endblock %}
+{% block content %}
+<div class="range-filter">
+  <a href="?range=today" class="{{ 'active' if range_param == 'today' else '' }}">Today</a>
+  <a href="?range=24h" class="{{ 'active' if range_param == '24h' else '' }}">Last 24h</a>
+  <a href="?range=7d" class="{{ 'active' if range_param == '7d' else '' }}">Last 7 days</a>
+  <a href="?range=30d" class="{{ 'active' if range_param == '30d' else '' }}">Last 30 days</a>
+</div>
+
+<p class="muted">High-level plant summary since {{ since_dt.strftime('%m/%d/%Y %I:%M %p') }}. Select a unit to drill into detailed alarm data.</p>
+
+<div class="dashboard-grid">
+  <a href="{{ url_for('overview.index', range=range_param, unit='all') }}" class="dashboard-card plant">
+    <div class="dashboard-card-title">Plant Total (All Units)</div>
+    <div class="dashboard-card-total">{{ plant.total }}</div>
+    <div class="dashboard-card-breakdown">
+      <span class="priority-1">P1: {{ plant.counts[1] }}</span>
+      <span class="priority-2">P2: {{ plant.counts[2] }}</span>
+      <span class="priority-3">P3: {{ plant.counts[3] }}</span>
+    </div>
+    <div class="dashboard-card-sub">Last Alarm: {{ plant.last_alarm['alarm_date'] if plant.last_alarm else 'N/A' }}</div>
+    <div class="dashboard-card-link">View Details &rarr;</div>
+  </a>
+
+  {% for summary in unit_summaries %}
+  <a href="{{ url_for('overview.index', range=range_param, unit=summary.unit) }}" class="dashboard-card">
+    <div class="dashboard-card-title">Unit {{ summary.unit }}</div>
+    <div class="dashboard-card-total">{{ summary.total }}</div>
+    <div class="dashboard-card-breakdown">
+      <span class="priority-1">P1: {{ summary.counts[1] }}</span>
+      <span class="priority-2">P2: {{ summary.counts[2] }}</span>
+      <span class="priority-3">P3: {{ summary.counts[3] }}</span>
+    </div>
+    <div class="dashboard-card-sub">Last Alarm: {{ summary.last_alarm['alarm_date'] if summary.last_alarm else 'N/A' }}</div>
+    <div class="dashboard-card-link">View Details &rarr;</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="dashboard-grid chart-grid">
+  <div class="panel chart-panel">
+    <h3>Total Alarms Trend</h3>
+    <canvas id="chart-total-trend"></canvas>
+  </div>
+  <div class="panel chart-panel">
+    <h3>Alarms by Priority (Stacked)</h3>
+    <canvas id="chart-priority-stacked"></canvas>
+  </div>
+  <div class="panel chart-panel">
+    <h3>Alarms by Priority (Trend)</h3>
+    <canvas id="chart-priority-trend"></canvas>
+  </div>
+</div>
+
+<div class="panel-row">
+  <div class="panel">
+    <h3>Top 5 Equipment by Alarm Count (Plant-wide)</h3>
+    <table>
+      <thead><tr><th>Equipment</th><th class="num">Alarm Count</th></tr></thead>
+      <tbody>
+        {% for row in top_equipment %}
+        <tr><td>{{ row['description'] }}</td><td class="num">{{ row['cnt'] }}</td></tr>
+        {% else %}
+        <tr><td colspan="2">No data yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <h3>Data Status</h3>
+    <div class="kpi-value small {{ 'ok' if last_load and last_load['status'] == 'success' else 'warn' }}">
+      {{ 'Data is current' if last_load and last_load['status'] == 'success' else 'No successful load yet' }}
+    </div>
+    <div class="kpi-sub">Last Load: {{ last_load['loaded_at'] if last_load else 'N/A' }}</div>
+  </div>
+  <div class="panel quick-actions">
+    <h3>Quick Actions</h3>
+    <a class="btn btn-primary" href="{{ url_for('reports.generate') }}">Generate New Report</a>
+    <a class="btn" href="{{ url_for('reports.index') }}">View Reports</a>
+    <a class="btn" href="{{ url_for('signoffs.index') }}">Review Signoffs</a>
+    <a class="btn" href="{{ url_for('followups.index') }}">Manage Follow Ups</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const chartSeries = {{ chart_series | tojson }};
+  const chartColors = { p1: "#d13438", p2: "#e07b1f", p3: "#d9a900", total: "#2f6fed" };
+  const chartBaseOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { display: true, position: "bottom" } },
+  };
+
+  new Chart(document.getElementById("chart-total-trend"), {
+    type: "line",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [{ label: "Total Alarms", data: chartSeries.total, borderColor: chartColors.total, backgroundColor: chartColors.total, tension: 0.3, pointRadius: 2 }],
+    },
+    options: chartBaseOptions,
+  });
+
+  new Chart(document.getElementById("chart-priority-stacked"), {
+    type: "bar",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [
+        { label: "Priority 1", data: chartSeries.p1, backgroundColor: chartColors.p1 },
+        { label: "Priority 2", data: chartSeries.p2, backgroundColor: chartColors.p2 },
+        { label: "Priority 3", data: chartSeries.p3, backgroundColor: chartColors.p3 },
+      ],
+    },
+    options: Object.assign({}, chartBaseOptions, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }),
+  });
+
+  new Chart(document.getElementById("chart-priority-trend"), {
+    type: "line",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [
+        { label: "Priority 1", data: chartSeries.p1, borderColor: chartColors.p1, backgroundColor: chartColors.p1, tension: 0.3, pointRadius: 2 },
+        { label: "Priority 2", data: chartSeries.p2, borderColor: chartColors.p2, backgroundColor: chartColors.p2, tension: 0.3, pointRadius: 2 },
+        { label: "Priority 3", data: chartSeries.p3, borderColor: chartColors.p3, backgroundColor: chartColors.p3, tension: 0.3, pointRadius: 2 },
+      ],
+    },
+    options: chartBaseOptions,
+  });
+</script>
+{% endblock %}

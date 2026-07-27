@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Follow Ups{% endblock %}
+{% block heading %}Follow Ups{% endblock %}
+{% block content %}
+<div class="panel">
+  <h3>New Follow Up</h3>
+  <form method="post" class="form-card">
+    <label class="full">Related Alarm
+      <select name="alarm_id">
+        <option value="">-- none --</option>
+        {% for a in recent_alarms %}
+        <option value="{{ a['id'] }}">{{ a['alarm_date'] }} - {{ a['description'] }} - {{ a['alarm_desc'] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Assignee<input type="text" name="assignee"></label>
+    <label>Due Date<input type="date" name="due_date"></label>
+    <label class="full">Notes<textarea name="notes" rows="3"></textarea></label>
+    <button type="submit" class="btn btn-primary">Create Follow Up</button>
+  </form>
+</div>
+<div class="panel">
+  <h3>Open / Recent Follow Ups</h3>
+  <table>
+    <thead><tr><th>Alarm</th><th>Assignee</th><th>Due</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+    <tbody>
+      {% for f in followups %}
+      <tr>
+        <td>{{ f['alarm_date'] }} - {{ f['description'] }}</td>
+        <td>{{ f['assignee'] }}</td>
+        <td>{{ f['due_date'] }}</td>
+        <td>{{ f['status'] }}</td>
+        <td>{{ f['notes'] }}</td>
+        <td>
+          {% if f['status'] == 'open' %}
+          <form method="post" action="{{ url_for('followups.close', followup_id=f['id']) }}">
+            <button type="submit" class="btn btn-sm">Close</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No follow ups yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

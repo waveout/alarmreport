@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Switch User{% endblock %}
+{% block heading %}Switch User{% endblock %}
+{% block content %}
+<div class="panel">
+  <p class="muted">Detected Windows account on this machine: <strong>{{ detected or 'unknown' }}</strong></p>
+  <form method="post" class="form-card">
+    <label class="full">Act as
+      <select name="user_id">
+        <option value="auto">Use my Windows account ({{ detected or 'unknown' }})</option>
+        {% for u in users %}
+        <option value="{{ u['id'] }}">{{ u['display_name'] }} ({{ u['windows_username'] }}) - {{ roles.get(u['role'], u['role']) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Switch</button>
+  </form>
+  {% if not users %}
+  <p class="muted">No users are registered yet. Ask an administrator to add you in Administration &rarr; Users &amp; Roles.</p>
+  {% endif %}
+</div>
+{% endblock %}

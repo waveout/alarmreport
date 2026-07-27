@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Overview{% endblock %}
+{% block heading %}Alarm Report Overview{% endblock %}
+{% block content %}
+{% if is_manager %}
+<div class="dashboard-back">
+  <a href="{{ url_for('overview.index', range=range_param) }}">&larr; Back to Manager Dashboard</a>
+</div>
+{% endif %}
+<div class="range-filter">
+  <a href="?range=today&unit={{ unit_param }}" class="{{ 'active' if range_param == 'today' else '' }}">Today</a>
+  <a href="?range=24h&unit={{ unit_param }}" class="{{ 'active' if range_param == '24h' else '' }}">Last 24h</a>
+  <a href="?range=7d&unit={{ unit_param }}" class="{{ 'active' if range_param == '7d' else '' }}">Last 7 days</a>
+  <a href="?range=30d&unit={{ unit_param }}" class="{{ 'active' if range_param == '30d' else '' }}">Last 30 days</a>
+</div>
+
+<div class="range-filter unit-filter">
+  <a href="?range={{ range_param }}&unit=all" class="{{ 'active' if unit_param == 'all' else '' }}">All Units</a>
+  <a href="?range={{ range_param }}&unit=1" class="{{ 'active' if unit_param == '1' else '' }}">Unit 1</a>
+  <a href="?range={{ range_param }}&unit=2" class="{{ 'active' if unit_param == '2' else '' }}">Unit 2</a>
+  <a href="?range={{ range_param }}&unit=3" class="{{ 'active' if unit_param == '3' else '' }}">Unit 3</a>
+</div>
+
+
+<div class="kpi-row">
+  <div class="kpi-card priority-1">
+    <div class="kpi-label">Priority 1 Alarms</div>
+    <div class="kpi-value">{{ counts[1] }}</div>
+    <div class="kpi-sub">Since {{ since_dt.strftime('%m/%d/%Y %I:%M %p') }}</div>
+  </div>
+  <div class="kpi-card priority-2">
+    <div class="kpi-label">Priority 2 Alarms</div>
+    <div class="kpi-value">{{ counts[2] }}</div>
+    <div class="kpi-sub">Since {{ since_dt.strftime('%m/%d/%Y %I:%M %p') }}</div>
+  </div>
+  <div class="kpi-card priority-3">
+    <div class="kpi-label">Priority 3 Alarms</div>
+    <div class="kpi-value">{{ counts[3] }}</div>
+    <div class="kpi-sub">Since {{ since_dt.strftime('%m/%d/%Y %I:%M %p') }}</div>
+  </div>
+  <div class="kpi-card total">
+    <div class="kpi-label">Total Alarms</div>
+    <div class="kpi-value">{{ total }}</div>
+    <div class="kpi-sub">Since {{ since_dt.strftime('%m/%d/%Y %I:%M %p') }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Last Alarm Event</div>
+    <div class="kpi-value small">{{ last_alarm['alarm_date'] if last_alarm else 'N/A' }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Data Status</div>
+    <div class="kpi-value small {{ 'ok' if last_load and last_load['status'] == 'success' else 'warn' }}">
+      {{ 'Data is current' if last_load and last_load['status'] == 'success' else 'No successful load yet' }}
+    </div>
+    <div class="kpi-sub">Last Load: {{ last_load['loaded_at'] if last_load else 'N/A' }}</div>
+  </div>
+</div>
+
+<div class="dashboard-grid chart-grid">
+  <div class="panel chart-panel">
+    <h3>Total Alarms Trend</h3>
+    <canvas id="chart-total-trend"></canvas>
+  </div>
+  <div class="panel chart-panel">
+    <h3>Alarms by Priority (Stacked)</h3>
+    <canvas id="chart-priority-stacked"></canvas>
+  </div>
+  <div class="panel chart-panel">
+    <h3>Alarms by Priority (Trend)</h3>
+    <canvas id="chart-priority-trend"></canvas>
+  </div>
+</div>
+
+<div class="panel-row">
+  <div class="panel">
+    <h3>Top 10 Equipment by Alarm Count</h3>
+    <table>
+      <thead><tr><th>Equipment</th><th>Unit</th><th class="num">Alarm Count</th></tr></thead>
+      <tbody>
+        {% for row in top_equipment %}
+        <tr><td>{{ row['description'] }}</td><td>{{ 'U' + row['unit']|string if row['unit'] else 'N/A' }}</td><td class="num">{{ row['cnt'] }}</td></tr>
+        {% else %}
+        <tr><td colspan="3">No data yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <h3>Recent Priority 1 Alarms</h3>
+    <table>
+      <thead><tr><th>Time</th><th>Unit</th><th>Equipment</th><th>Alarm Message</th></tr></thead>
+      <tbody>
+        {% for row in recent_p1 %}
+        <tr><td>{{ row['alarm_date'] }}</td><td>{{ 'U' + row['unit']|string if row['unit'] else 'N/A' }}</td><td>{{ row['description'] }}</td><td>{{ row['alarm_desc'] }}</td></tr>
+        {% else %}
+        <tr><td colspan="4">No data yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="panel quick-actions">
+    <h3>Quick Actions</h3>
+    <a class="btn btn-primary" href="{{ url_for('reports.generate') }}">Generate New Report</a>
+    <a class="btn" href="{{ url_for('reports.index') }}">View Reports</a>
+    <a class="btn" href="{{ url_for('signoffs.index') }}">Review Signoffs</a>
+    <a class="btn" href="{{ url_for('followups.index') }}">Manage Follow Ups</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const chartSeries = {{ chart_series | tojson }};
+  const chartColors = { p1: "#d13438", p2: "#e07b1f", p3: "#d9a900", total: "#2f6fed" };
+  const chartBaseOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { display: true, position: "bottom" } },
+  };
+
+  new Chart(document.getElementById("chart-total-trend"), {
+    type: "line",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [{ label: "Total Alarms", data: chartSeries.total, borderColor: chartColors.total, backgroundColor: chartColors.total, tension: 0.3, pointRadius: 2 }],
+    },
+    options: chartBaseOptions,
+  });
+
+  new Chart(document.getElementById("chart-priority-stacked"), {
+    type: "bar",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [
+        { label: "Priority 1", data: chartSeries.p1, backgroundColor: chartColors.p1 },
+        { label: "Priority 2", data: chartSeries.p2, backgroundColor: chartColors.p2 },
+        { label: "Priority 3", data: chartSeries.p3, backgroundColor: chartColors.p3 },
+      ],
+    },
+    options: Object.assign({}, chartBaseOptions, { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }),
+  });
+
+  new Chart(document.getElementById("chart-priority-trend"), {
+    type: "line",
+    data: {
+      labels: chartSeries.labels,
+      datasets: [
+        { label: "Priority 1", data: chartSeries.p1, borderColor: chartColors.p1, backgroundColor: chartColors.p1, tension: 0.3, pointRadius: 2 },
+        { label: "Priority 2", data: chartSeries.p2, borderColor: chartColors.p2, backgroundColor: chartColors.p2, tension: 0.3, pointRadius: 2 },
+        { label: "Priority 3", data: chartSeries.p3, borderColor: chartColors.p3, backgroundColor: chartColors.p3, tension: 0.3, pointRadius: 2 },
+      ],
+    },
+    options: chartBaseOptions,
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Alarm Report{% endblock %} - Scherer Power Plant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">&#9650;</div>
+        <div class="brand-text">SOUTHERN<br>COMPANY</div>
+      </div>
+      <div class="plant-name">Scherer Power Plant<br>Alarm Report</div>
+      <nav>
+        <a href="{{ url_for('overview.index') }}" class="{{ 'active' if request.endpoint == 'overview.index' else '' }}">Overview</a>
+        <a href="{{ url_for('reports.generate') }}" class="{{ 'active' if request.endpoint == 'reports.generate' else '' }}">Generate Report</a>
+        <a href="{{ url_for('reports.index') }}" class="{{ 'active' if request.endpoint == 'reports.index' else '' }}">Reports</a>
+        <a href="{{ url_for('signoffs.index') }}" class="{{ 'active' if request.endpoint == 'signoffs.index' else '' }}">Signoffs</a>
+        <a href="{{ url_for('followups.index') }}" class="{{ 'active' if request.endpoint == 'followups.index' else '' }}">Follow Ups</a>
+        <a href="{{ url_for('draft_notes.index') }}" class="{{ 'active' if request.endpoint == 'draft_notes.index' else '' }}">Draft Notes</a>
+        <a href="{{ url_for('data_loads.index') }}" class="{{ 'active' if request.endpoint == 'data_loads.index' else '' }}">Data Load History</a>
+        <a href="{{ url_for('admin.index') }}" class="{{ 'active' if request.endpoint == 'admin.index' else '' }}">Administration</a>
+      </nav>
+    </aside>
+    <main class="content">
+      <header class="topbar">
+        <h1>{% block heading %}Overview{% endblock %}</h1>
+        <div class="topbar-right">
+          <span class="topbar-time">{{ now.strftime('%m/%d/%Y %I:%M %p') if now }}</span>
+          <div class="user-chip">
+            <span class="user-name">{{ current_user.display_name }}</span>
+            <span class="role-badge role-{{ current_user.role }}">{{ role_labels.get(current_user.role, current_user.role) }}</span>
+            {% if current_user.get('previewing') %}
+            <span class="role-badge role-preview">Preview</span>
+            {% endif %}
+            {% if can_preview_roles %}
+            <a href="{{ url_for('account.preview') }}" class="switch-user-link">Preview Role</a>
+            {% endif %}
+            <a href="{{ url_for('account.switch') }}" class="switch-user-link">Switch User</a>
+          </div>
+        </div>
+      </header>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      <div class="page-content">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>

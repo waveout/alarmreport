@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Signoffs{% endblock %}
+{% block heading %}Signoffs{% endblock %}
+{% block content %}
+<div class="panel">
+  <h3>New Signoff</h3>
+  {% if current_user.role == 'bto' %}
+  <form method="post" class="form-card">
+    <label>Report Date<input type="date" name="report_date" value="{{ today }}" required></label>
+    <label>Signing As<input type="text" value="{{ current_user.display_name }}" disabled></label>
+    <label class="full">Notes<textarea name="notes" rows="4" placeholder="Additional information..."></textarea></label>
+    <button type="submit" class="btn btn-primary">Acknowledge &amp; Sign Off</button>
+  </form>
+  {% else %}
+  <p class="muted">Only BTOs/Operators can acknowledge alarms and leave a signoff note. Contact Administration if you need BTO access.</p>
+  {% endif %}
+</div>
+<div class="panel">
+  <h3>Signoff History</h3>
+  <table>
+    <thead><tr><th>Report Date</th><th>Signed By</th><th>Notes</th><th>When</th></tr></thead>
+    <tbody>
+      {% for s in signoffs %}
+      <tr>
+        <td>{{ s['report_date'] }}</td>
+        <td>{{ s['user_name'] }}</td>
+        <td>{{ s['notes'] }}</td>
+        <td>{{ s['created_at'] }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No signoffs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

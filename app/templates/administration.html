@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Administration{% endblock %}
+{% block heading %}Administration{% endblock %}
+{% block content %}
+<div class="panel">
+  <h3>Import Settings</h3>
+  <form method="post" class="form-card">
+    <label class="full">Incoming Folder<input type="text" name="incoming_dir" value="{{ settings.incoming_dir }}"></label>
+    <label class="full">Backup Folder<input type="text" name="backup_dir" value="{{ settings.backup_dir }}"></label>
+    <label>Watch Interval (seconds)<input type="number" name="watch_interval_seconds" value="{{ settings.watch_interval_seconds }}" min="5"></label>
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h3>Users &amp; Roles</h3>
+  <p class="muted">Map a Windows account name to a display name and role. BTO/Operator can acknowledge alarm signoffs; Viewer is read-only.</p>
+  <form method="post" action="{{ url_for('admin.create_user') }}" class="form-card">
+    <label>Windows Username<input type="text" name="windows_username" placeholder="e.g. dhjenkin" required></label>
+    <label>Display Name<input type="text" name="display_name" required></label>
+    <label>Role
+      <select name="role">
+        {% for role_key, role_name in roles.items() %}
+        <option value="{{ role_key }}" {{ 'selected' if role_key == 'viewer' else '' }}>{{ role_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Add User</button>
+  </form>
+
+  <table>
+    <thead><tr><th>Windows Username</th><th>Display Name</th><th>Role</th><th></th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u['windows_username'] }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.update_user', user_id=u['id']) }}" class="inline-form">
+            <input type="text" name="display_name" value="{{ u['display_name'] }}" required>
+            <select name="role">
+              {% for role_key, role_name in roles.items() %}
+              <option value="{{ role_key }}" {{ 'selected' if u['role'] == role_key else '' }}>{{ role_name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm">Save</button>
+          </form>
+        </td>
+        <td>{{ roles.get(u['role'], u['role']) }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.delete_user', user_id=u['id']) }}">
+            <button type="submit" class="btn btn-sm">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No users registered yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
